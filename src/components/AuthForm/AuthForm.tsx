@@ -1,6 +1,6 @@
 import {FormEvent, useRef, useState} from "react";
 import classes from "./AuthForm.module.css";
-import {SIGNUP_URL} from "../../app.config";
+import {SIGNUP_URL,SIGNIN_URL} from "../../app.config";
 
 
 const AuthForm = () => {
@@ -21,41 +21,33 @@ const AuthForm = () => {
 
     const onSubmit = (e: FormEvent) => {
         e.preventDefault();
-
         setIsLoading(true);
-
-        if (isLogin) {
-            console.log("...logging in")
-        } else {
-            console.log("...submitting")
-            fetch(SIGNUP_URL, {
-                method: "post",
-                headers: new Headers({'content-type': 'application/json'}),
-                body: JSON.stringify({
-                    email: emailInputRef.current?.value,
-                    password: passwordInputRef.current?.value,
-                    returnSecureToken: true,
-                    mode: "no-cors"
-                })
-            }).then(res => {
-                setIsLoading(false);
-                if (res.ok) {
-                    res.json().then(d => {
-                        onRequestSuccess(d)
-                    })
-                } else {
-                    return res.json().then(d => {
-                        const errorMessage = (d && d.error && d.error.message)
-                            ? d.error.message
-                            : "Authentication failed"
-                        alert(errorMessage);
-                    })
-                }
-            }).catch(e => {
-                console.log(e)
+        fetch((isLogin ? SIGNIN_URL : SIGNUP_URL), {
+            method: "post",
+            headers: new Headers({'content-type': 'application/json'}),
+            body: JSON.stringify({
+                email: emailInputRef.current?.value,
+                password: passwordInputRef.current?.value,
+                returnSecureToken: true,
+                mode: "no-cors"
             })
-        }
-
+        }).then(res => {
+            setIsLoading(false);
+            if (res.ok) {
+               return res.json();
+            } else {
+                return res.json().then(d => {
+                    const errorMessage = (d && d.error && d.error.message)
+                        ? d.error.message
+                        : "Authentication failed"
+                    throw new Error(errorMessage);
+                })
+            }
+        }).then(data => {
+            onRequestSuccess(data)
+        }).catch(e => {
+            alert(e.message);
+        })
     }
 
     return (
